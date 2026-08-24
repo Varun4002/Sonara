@@ -30,26 +30,16 @@ internal val SonaraColorScheme = darkColorScheme(
  */
 @Immutable
 data class SonaraColors(
-    val elevatedSurface: Color,
-    val glassSurface: Color,
-    val glassBorder: Color,
-    val playerSurface: Color,
-    val textPrimary: Color,
-    val textSecondary: Color,
-    val textMuted: Color,
+    val elevatedSurface: Color = SonaraElevatedSurface,
+    val glassSurface: Color = SonaraGlassSurface,
+    val glassBorder: Color = SonaraGlassBorder,
+    val playerSurface: Color = SonaraPlayerSurface,
+    val textPrimary: Color = SonaraOnBackground,
+    val textSecondary: Color = SonaraOnSurfaceMuted,
+    val textMuted: Color = SonaraOnSurfaceMuted,
 )
 
-val LocalSonaraColors = staticCompositionLocalOf {
-    SonaraColors(
-        elevatedSurface = SonaraElevatedSurface,
-        glassSurface = SonaraGlassSurface,
-        glassBorder = SonaraGlassBorder,
-        playerSurface = SonaraPlayerSurface,
-        textPrimary = SonaraOnBackground,
-        textSecondary = SonaraOnSurfaceMuted,
-        textMuted = SonaraOnSurfaceMuted,
-    )
-}
+val LocalSonaraColors = staticCompositionLocalOf { SonaraColors() }
 
 /** Convenience accessor for the extended semantic roles. */
 @Composable

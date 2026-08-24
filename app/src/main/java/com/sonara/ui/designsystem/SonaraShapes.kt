@@ -13,6 +13,9 @@ object SonaraShapes {
     val medium = RoundedCornerShape(16.dp)
     val large = RoundedCornerShape(24.dp)
     val card = RoundedCornerShape(20.dp)
+
+    /** Hero surfaces: full-screen player glass, large sheets. */
+    val extraLarge = RoundedCornerShape(32.dp)
     val player = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     val pill = RoundedCornerShape(50)
 
@@ -22,6 +25,6 @@ object SonaraShapes {
         small = medium,
         medium = card,
         large = large,
-        extraLarge = player,
+        extraLarge = extraLarge,
     )
 }

@@ -28,7 +28,7 @@ that exists.
 | Language     | Kotlin 2.2.10                                       |
 | UI           | Jetpack Compose 1.11.x (BOM `2026.05.01`) + Material 3 |
 | Build        | Gradle Kotlin DSL, AGP **9.3.2**                    |
-| Playback     | Media3 (ExoPlayer + MediaSession) — declared, unused yet |
+| Playback     | Media3 (ExoPlayer + MediaSession) — Stage 2 core, device-verified |
 | Images       | Coil 3.3 (compose + okhttp network stack)           |
 | Color        | androidx Palette                                    |
 | Persistence  | DataStore Preferences                               |
@@ -83,6 +83,18 @@ Verification gate before claiming anything works:
 
 There is no CI configured and no formatter/linter beyond Android lint.
 
+### Device verification (2026-08-25, POCO peridot, Android 16 / SDK 36)
+
+Stage 2 playback was verified end-to-end on real hardware via
+`adb` (install → tap Home tile → observe). Confirmed: `PlaybackService`
+runs as a foreground service with the Media3 notification; the app's
+`MediaSession` is the system media-button session (active, 5-item queue);
+`dumpsys audio` shows a real AudioTrack (USAGE_MEDIA, 22.05 kHz mono —
+the demo WAV format) started and routed to the output device; mini-player
+shows title + ticking position + progress. No errors in logcat. When
+claiming playback changes work, re-run at least this smoke path on the
+device, not just the Gradle gate.
+
 ## Project layout
 
 ```
@@ -115,14 +127,11 @@ app/src/main/java/com/sonara/
 app/src/test/java/com/sonara/ui/DesignTokensTest.kt   # token invariant tests
 app/src/test/java/com/sonara/playback/*.kt           # state + catalog tests
 app/src/main/res/raw/demo_*.wav                      # generated ambient demo audio
-app/src/main/res/values/themes.xml    # style IDs keep historical Theme.Luma names
+app/src/main/res/values/themes.xml    # Theme.Sonara / Theme.Sonara.Starting
 ```
 
 - Package namespace is `com.sonara`; applicationId `com.sonara`
   (`com.sonara.debug` for debug builds). The folder is named `sonara`.
-- Single-module project (`settings.gradle.kts` includes only `:app`).
-- Resource/style IDs still say `Theme.Luma` (manifest-referenced); visible
-  branding is Sonara everywhere.
 
 ## Conventions
 
@@ -163,4 +172,9 @@ app/src/main/res/values/themes.xml    # style IDs keep historical Theme.Luma nam
    involved). Note: reading CompositionLocals requires a compose test context —
    plain JUnit tests should assert on token objects directly.
 3. Verify with `./gradlew testDebugUnitTest lintDebug assembleDebug` before
-   claiming anything works.
+   claiming anything works; playback changes additionally need the
+   `adb` device smoke path described above.
+4. When a device is connected, pull a screenshot at the end of every
+   completed piece of work as visual evidence:
+   `adb exec-out screencap -p > sonara-<YYYYMMDD>-<HHMM>-<what>.png`
+   (saved in the project root, named with date/time and what was done).

@@ -14,10 +14,15 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val player = appContainer.playerConnection
+        val container = appContainer
+        val player = container.playerConnection
         setContent {
             SonaraTheme {
-                SonaraShell(player = player)
+                SonaraShell(
+                    player = player,
+                    library = container.library,
+                    ambient = container.ambient,
+                )
             }
         }
     }

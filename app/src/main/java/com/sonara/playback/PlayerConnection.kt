@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +17,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+
+/** One entry of the playback queue as exposed to the UI. */
+data class QueueEntry(
+    val mediaId: String,
+    val title: String,
+    val artist: String,
+    val isCurrent: Boolean,
+)
 
 /**
  * UI-facing handle on the playback session. Wraps an async [MediaController]
@@ -31,6 +40,9 @@ class PlayerConnection(
     private val appContext = context.applicationContext
     private val _state = MutableStateFlow(NowPlayingState.Empty)
     val state: StateFlow<NowPlayingState> = _state.asStateFlow()
+
+    private val _queue = MutableStateFlow<List<QueueEntry>>(emptyList())
+    val queue: StateFlow<List<QueueEntry>> = _queue.asStateFlow()
 
     private var controller: MediaController? = null
     private var positionTicker: Job? = null
@@ -67,9 +79,14 @@ class PlayerConnection(
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     refreshFromPlayer()
                 }
+
+                override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+                    refreshQueue()
+                }
             },
         )
         refreshFromPlayer()
+        refreshQueue()
     }
 
     /** Loads the demo playlist and starts playback at [index]. */
@@ -98,6 +115,22 @@ class PlayerConnection(
         controller?.seekTo(positionMs)
     }
 
+    /** Removes every upcoming item; the current track keeps playing. */
+    fun clearUpNext() {
+        controller?.run {
+            val current = currentMediaItemIndex
+            removeMediaItems((current + 1).coerceAtMost(mediaItemCount), mediaItemCount)
+        }
+        refreshQueue()
+    }
+
+    fun playQueueIndex(index: Int) {
+        controller?.run {
+            seekTo(index, 0L)
+            play()
+        }
+    }
+
     /**
      * Releases this activity-scoped controller only; the service keeps its own
      * player alive so audio continues in the background.
@@ -108,18 +141,40 @@ class PlayerConnection(
         controller = null
     }
 
+    private fun refreshQueue() {
+        val player = controller ?: return
+        val timeline = player.currentTimeline
+        if (timeline.isEmpty) {
+            _queue.value = emptyList()
+            return
+        }
+        val current = player.currentMediaItemIndex
+        _queue.value = buildList {
+            for (i in 0 until timeline.windowCount) {
+                val mediaId = timeline.getWindow(i, Timeline.Window()).mediaItem.mediaId
+                val track = mediaId?.let(DemoCatalog::trackById) ?: continue
+                add(
+                    QueueEntry(
+                        mediaId = track.id,
+                        title = track.title,
+                        artist = track.artist,
+                        isCurrent = i == current,
+                    ),
+                )
+            }
+        }
+    }
+
     private fun refreshFromPlayer() {
         val player = controller ?: return
-        val track = player.currentMediaItem?.mediaId?.let(DemoCatalog::trackById)
         _state.update {
-            it.copy(
-                isConnected = true,
-                mediaId = track?.id,
-                title = track?.title.orEmpty(),
-                artist = track?.artist.orEmpty(),
+            PlaybackStateMapper.map(
+                current = it,
+                mediaId = player.currentMediaItem?.mediaId,
                 isPlaying = player.isPlaying,
-                positionMs = player.currentPosition.coerceAtLeast(0L),
-                durationMs = player.duration.takeIf { d -> d > 0 } ?: it.durationMs,
+                positionMs = player.currentPosition,
+                durationMs = player.duration,
+                mediaItemCount = player.mediaItemCount,
             )
         }
     }

@@ -19,14 +19,23 @@ object SonaraMotion {
     /** Cross-fade between top-level tabs. */
     const val PageTransition: Int = 280
 
+    /** Detail screens pushing in (album, artist, queue, settings). */
+    const val ScreenPush: Int = 320
+
     /** Mini-player → full player expansion. Reserved for the playback stage. */
     const val PlayerExpand: Int = 380
 
     /** Slow, deliberate reveals (hero surfaces). */
     const val Slow: Int = 450
 
-    /** Long ambient drifts for the future reactive background. */
+    /** Artwork crossfade on track change. */
+    const val ArtworkTransition: Int = 700
+
+    /** Long ambient drifts for the reactive background. */
     const val Ambient: Int = 800
+
+    /** Palette interpolation on song change; matches the ambient engine tick. */
+    const val PaletteTransition: Int = 1_400
 
     /** Confident deceleration — default for entrances and expansions. */
     val EmphasizedEasing: Easing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
