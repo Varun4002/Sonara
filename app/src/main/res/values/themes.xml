@@ -1,0 +1,18 @@
+<resources>
+
+<!-- Applied after the splash screen. Dark, edge-to-edge, no action bar. -->
+    <style name="Theme.Sonara" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/sonara_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+
+    <!-- Launch theme: system splash screen, then hands off to Theme.Sonara. -->
+    <style name="Theme.Sonara.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/sonara_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Sonara</item>
+    </style>
+
+</resources>
