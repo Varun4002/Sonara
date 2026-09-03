@@ -44,8 +44,17 @@ class PlayerConnection(
     private val _queue = MutableStateFlow<List<QueueEntry>>(emptyList())
     val queue: StateFlow<List<QueueEntry>> = _queue.asStateFlow()
 
+    private val _shuffleEnabled = MutableStateFlow(false)
+    val shuffleEnabled: StateFlow<Boolean> = _shuffleEnabled.asStateFlow()
+
+    private val _repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
+    val repeatMode: StateFlow<Int> = _repeatMode.asStateFlow()
+
     private var controller: MediaController? = null
     private var positionTicker: Job? = null
+
+    /** Metadata for provider-backed tracks not present in DemoCatalog. */
+    private val remoteMeta = mutableMapOf<String, Pair<String, String>>()
 
     init {
         val token = SessionToken(appContext, ComponentName(appContext, PlaybackService::class.java))
@@ -83,10 +92,20 @@ class PlayerConnection(
                 override fun onTimelineChanged(timeline: Timeline, reason: Int) {
                     refreshQueue()
                 }
+
+                override fun onShuffleModeEnabledChanged(enabled: Boolean) {
+                    _shuffleEnabled.value = enabled
+                }
+
+                override fun onRepeatModeChanged(repeatMode: Int) {
+                    _repeatMode.value = repeatMode
+                }
             },
         )
         refreshFromPlayer()
         refreshQueue()
+        _shuffleEnabled.value = connected.shuffleModeEnabled
+        _repeatMode.value = connected.repeatMode
     }
 
     /** Loads the demo playlist and starts playback at [index]. */
@@ -96,6 +115,38 @@ class PlayerConnection(
             setMediaItems(items, index, 0L)
             prepare()
             play()
+        }
+    }
+
+    /**
+     * Plays provider-backed tracks. Stream URIs are resolved via [resolver]
+     * off the main thread before the queue is set; tracks whose source can't
+     * be resolved are skipped. Falls back cleanly — the demo path is untouched.
+     */
+    fun playTracks(
+        tracks: List<com.sonara.music.Track>,
+        startIndex: Int,
+        resolver: suspend (com.sonara.music.Track) -> String?,
+    ) {
+        scope.launch {
+            val items = tracks.mapNotNull { track ->
+                val raw = resolver(track) ?: return@mapNotNull null
+                val uri = if (raw.startsWith("demo:")) {
+                    "android.resource://${appContext.packageName}/raw/${raw.removePrefix("demo:")}"
+                } else raw
+                remoteMeta[track.id] = track.title to track.artist
+                MediaItem.Builder()
+                    .setMediaId(track.id)
+                    .setUri(uri)
+                    .build()
+            }
+            if (items.isEmpty()) return@launch
+            val index = startIndex.coerceIn(0, items.lastIndex)
+            controller?.run {
+                setMediaItems(items, index, 0L)
+                prepare()
+                play()
+            }
         }
     }
 
@@ -131,6 +182,22 @@ class PlayerConnection(
         }
     }
 
+    /** Toggles Media3 shuffle; the session is the source of truth. */
+    fun toggleShuffle() {
+        controller?.run { shuffleModeEnabled = !shuffleModeEnabled }
+    }
+
+    /** Cycles OFF → ONE → ALL → OFF. */
+    fun cycleRepeatMode() {
+        controller?.run {
+            repeatMode = when (repeatMode) {
+                Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ONE
+                Player.REPEAT_MODE_ONE -> Player.REPEAT_MODE_ALL
+                else -> Player.REPEAT_MODE_OFF
+            }
+        }
+    }
+
     /**
      * Releases this activity-scoped controller only; the service keeps its own
      * player alive so audio continues in the background.
@@ -152,12 +219,15 @@ class PlayerConnection(
         _queue.value = buildList {
             for (i in 0 until timeline.windowCount) {
                 val mediaId = timeline.getWindow(i, Timeline.Window()).mediaItem.mediaId
-                val track = mediaId?.let(DemoCatalog::trackById) ?: continue
+                    ?: continue
+                val demo = DemoCatalog.trackById(mediaId)
+                val remote = remoteMeta[mediaId]
+                if (demo == null && remote == null) continue
                 add(
                     QueueEntry(
-                        mediaId = track.id,
-                        title = track.title,
-                        artist = track.artist,
+                        mediaId = mediaId,
+                        title = demo?.title ?: remote!!.first,
+                        artist = demo?.artist ?: remote!!.second,
                         isCurrent = i == current,
                     ),
                 )
@@ -167,14 +237,18 @@ class PlayerConnection(
 
     private fun refreshFromPlayer() {
         val player = controller ?: return
+        val mediaId = player.currentMediaItem?.mediaId
+        val remote = mediaId?.let { remoteMeta[it] }
         _state.update {
             PlaybackStateMapper.map(
                 current = it,
-                mediaId = player.currentMediaItem?.mediaId,
+                mediaId = mediaId,
                 isPlaying = player.isPlaying,
                 positionMs = player.currentPosition,
                 durationMs = player.duration,
                 mediaItemCount = player.mediaItemCount,
+                remoteTitle = remote?.first,
+                remoteArtist = remote?.second,
             )
         }
     }

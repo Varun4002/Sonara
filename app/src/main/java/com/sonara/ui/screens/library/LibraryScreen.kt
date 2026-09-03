@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -35,9 +36,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import com.sonara.data.LibraryRepository
+import com.sonara.music.MusicRepository
 import com.sonara.playback.DemoCatalog
 import com.sonara.ui.components.SonaraArtwork
 import com.sonara.ui.components.SectionHeader
+import com.sonara.ui.designsystem.LocalBottomChromeHeight
 import com.sonara.ui.designsystem.SonaraShapes
 import com.sonara.ui.designsystem.SonaraSpacing
 import com.sonara.ui.theme.LocalSonaraColors
@@ -56,11 +59,15 @@ fun LibraryScreen(
     onOpenAlbum: (String) -> Unit,
     onOpenArtist: (String) -> Unit,
     onOpenSettings: () -> Unit,
+    musicRepo: MusicRepository,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalSonaraColors.current
     val liked by library.likedIds.collectAsState()
+    val playlists by musicRepo.playlists.collectAsState()
     val albums = remember { DemoCatalog.albums() }
+
+    LaunchedEffect(musicRepo) { musicRepo.refreshPlaylists() }
 
     LazyColumn(
         modifier = modifier
@@ -70,7 +77,7 @@ fun LibraryScreen(
             start = SonaraSpacing.screenPadding,
             top = SonaraSpacing.xxl,
             end = SonaraSpacing.screenPadding,
-            bottom = SonaraSpacing.massive,
+            bottom = LocalBottomChromeHeight.current,
         ),
         verticalArrangement = Arrangement.spacedBy(SonaraSpacing.sm),
     ) {
@@ -145,6 +152,46 @@ fun LibraryScreen(
                 title = "Downloads",
                 detail = "0 songs · offline playback arrives with the catalog stage",
             )
+        }
+
+        if (playlists.isNotEmpty()) {
+            item {
+                SectionHeader(
+                    title = "Playlists",
+                    modifier = Modifier.padding(top = SonaraSpacing.lg),
+                )
+            }
+            items(playlists.size) { index ->
+                val playlist = playlists[index]
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = SonaraSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(SonaraSpacing.md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SonaraArtwork(
+                        mediaId = playlist.id,
+                        model = playlist.artworkUrl,
+                        shape = SonaraShapes.small,
+                        modifier = Modifier.size(SonaraSpacing.huge),
+                    )
+                    Column {
+                        Text(
+                            text = playlist.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = "${playlist.trackCount} ${if (playlist.trackCount == 1) "song" else "songs"}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.textSecondary,
+                        )
+                    }
+                }
+            }
         }
 
         item {

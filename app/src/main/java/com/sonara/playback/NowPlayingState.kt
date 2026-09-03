@@ -17,6 +17,13 @@ data class NowPlayingState(
 ) {
     val isEmpty: Boolean get() = mediaId == null
 
+    /**
+     * The single source of truth for player visibility: a track is loaded,
+     * regardless of playing/paused/buffering/ended. UI must never infer track
+     * existence from playback status.
+     */
+    val hasCurrentTrack: Boolean get() = mediaId != null
+
     /** 0f..1f, guarded against zero/unknown duration. */
     val progressFraction: Float
         get() = if (durationMs > 0) {

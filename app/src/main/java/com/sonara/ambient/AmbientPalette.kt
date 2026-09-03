@@ -28,10 +28,10 @@ data class AmbientPalette(
         /** Calm neutral environment used before any track and on failure. */
         val Neutral = AmbientPalette(
             base = Color(0xFF0B0B0F),
-            primary = Color(0xFF1A1D2E),
-            secondary = Color(0xFF14202A),
-            highlight = Color(0xFF232A3E),
-            accent = Color(0xFF5E6B85),
+            primary = Color(0xFF252A45),
+            secondary = Color(0xFF1B2C3A),
+            highlight = Color(0xFF33405E),
+            accent = Color(0xFF7484A8),
         )
     }
 }

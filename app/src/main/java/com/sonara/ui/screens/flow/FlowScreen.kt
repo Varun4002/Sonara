@@ -26,11 +26,14 @@ import com.sonara.playback.PlayerConnection
 import com.sonara.ui.components.SonaraArtwork
 import com.sonara.ui.components.SonaraEmptyState
 import com.sonara.ui.components.SonaraTrackRow
-import com.sonara.ui.components.sonaraGlass
 import com.sonara.ui.player.PlayPauseIcon
+import com.sonara.ui.designsystem.LocalBottomChromeHeight
 import com.sonara.ui.designsystem.SonaraShapes
 import com.sonara.ui.designsystem.SonaraSpacing
+import com.sonara.ui.material.LiquidGlassSurface
+import com.sonara.ui.material.LiquidGlassTokens
 import com.sonara.ui.theme.LocalSonaraColors
+import androidx.compose.ui.unit.dp
 
 /**
  * Flow — Sonara's continuous listening session. With a session active the
@@ -56,7 +59,7 @@ fun FlowScreen(
             start = SonaraSpacing.screenPadding,
             top = SonaraSpacing.xxl,
             end = SonaraSpacing.screenPadding,
-            bottom = SonaraSpacing.massive,
+            bottom = LocalBottomChromeHeight.current,
         ),
         verticalArrangement = Arrangement.spacedBy(SonaraSpacing.sm),
     ) {
@@ -171,13 +174,17 @@ fun FlowScreen(
 
 @Composable
 private fun FlowPrimaryAction(label: String, onClick: () -> Unit) {
-    Text(
-        text = label,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier
-            .sonaraGlass(shape = SonaraShapes.pill)
-            .clickable(onClick = onClick)
-            .padding(horizontal = SonaraSpacing.xxl, vertical = SonaraSpacing.md),
-    )
+    LiquidGlassSurface(
+        shape = SonaraShapes.pill,
+        cornerRadius = 28.dp,
+        intensity = LiquidGlassTokens.Subtle,
+        modifier = Modifier.clickable(onClick = onClick),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = SonaraSpacing.xxl, vertical = SonaraSpacing.md),
+        )
+    }
 }

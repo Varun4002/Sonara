@@ -35,32 +35,38 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
+import com.sonara.music.MusicRepository
+import com.sonara.music.Track
 import com.sonara.playback.DemoCatalog
 import com.sonara.playback.DemoTrack
 import com.sonara.ui.components.SonaraArtwork
 import com.sonara.ui.components.SonaraEmptyState
 import com.sonara.ui.components.SonaraTrackRow
-import com.sonara.ui.components.sonaraGlass
+import com.sonara.ui.designsystem.LocalBottomChromeHeight
 import com.sonara.ui.designsystem.SonaraMotion
 import com.sonara.ui.designsystem.SonaraShapes
 import com.sonara.ui.designsystem.SonaraSpacing
+import com.sonara.ui.material.LiquidGlassSurface
+import com.sonara.ui.material.LiquidGlassTokens
 import com.sonara.ui.theme.LocalSonaraColors
 import kotlinx.coroutines.delay
 
 /**
- * Search over the bundled demo catalog. Debounced local matching with the
- * required states: idle (browse), typing, results, no results. The catalog
- * stage will swap the data source without changing this composition.
+ * Search over the active music provider. Debounced matching with the
+ * required states: idle (browse), typing, results, no results.
  */
 @Composable
 fun SearchScreen(
     onPlayTrack: (Int) -> Unit,
     onOpenAlbum: (String) -> Unit,
+    musicRepo: MusicRepository,
+    onPlayTracks: (List<Track>, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalSonaraColors.current
     var query by remember { mutableStateOf("") }
-    var results by remember { mutableStateOf<List<DemoTrack>>(emptyList()) }
+    var results by remember { mutableStateOf<List<Track>>(emptyList()) }
     var searching by remember { mutableStateOf(false) }
 
     // Debounce: no matching on every keystroke.
@@ -72,7 +78,7 @@ fun SearchScreen(
         }
         searching = true
         delay(SonaraMotion.Normal.toLong() * 2)
-        results = DemoCatalog.search(query)
+        results = musicRepo.search(query).tracks
         searching = false
     }
 
@@ -84,7 +90,7 @@ fun SearchScreen(
             start = SonaraSpacing.screenPadding,
             top = SonaraSpacing.xxl,
             end = SonaraSpacing.screenPadding,
-            bottom = SonaraSpacing.massive,
+            bottom = LocalBottomChromeHeight.current,
         ),
         verticalArrangement = Arrangement.spacedBy(SonaraSpacing.sm),
     ) {
@@ -165,13 +171,13 @@ fun SearchScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onPlayTrack(DemoCatalog.tracks.indexOfFirst { it.id == top.id }) }
+                        .clickable { onPlayTracks(results, 0) }
                         .padding(vertical = SonaraSpacing.sm),
                     horizontalArrangement = Arrangement.spacedBy(SonaraSpacing.md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     SonaraArtwork(
-                        mediaId = top.id,
+                        mediaId = top.artworkMediaId ?: top.id,
                         shape = SonaraShapes.medium,
                         modifier = Modifier.size(SonaraSpacing.massive),
                     )
@@ -203,10 +209,10 @@ fun SearchScreen(
                 items(results.size - 1) { index ->
                     val track = results[index + 1]
                     SonaraTrackRow(
-                        mediaId = track.id,
+                        mediaId = track.artworkMediaId ?: track.id,
                         title = track.title,
                         subtitle = track.artist,
-                        onClick = { onPlayTrack(DemoCatalog.tracks.indexOfFirst { it.id == track.id }) },
+                        onClick = { onPlayTracks(results, index + 1) },
                     )
                 }
             }
@@ -214,7 +220,7 @@ fun SearchScreen(
     }
 }
 
-/** Rounded tonal search field; focus deepens the surface, no neon outline. */
+/** Liquid-glass search field; focus deepens the surface, no neon outline. */
 @Composable
 private fun SearchField(
     query: String,
@@ -230,35 +236,40 @@ private fun SearchField(
             fontSize = MaterialTheme.typography.bodyLarge.fontSize,
         ),
         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+        modifier = Modifier.fillMaxWidth(),
         decorationBox = { inner ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .sonaraGlass(shape = SonaraShapes.medium)
-                    .padding(horizontal = SonaraSpacing.lg, vertical = SonaraSpacing.md),
-                horizontalArrangement = Arrangement.spacedBy(SonaraSpacing.md),
-                verticalAlignment = Alignment.CenterVertically,
+            LiquidGlassSurface(
+                shape = SonaraShapes.medium,
+                cornerRadius = 16.dp,
+                intensity = LiquidGlassTokens.Subtle,
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.Search,
-                    contentDescription = null,
-                    tint = colors.textMuted,
-                    modifier = Modifier.size(SonaraSpacing.xl),
-                )
-                Box {
-                    if (query.isEmpty()) {
-                        Text(
-                            text = "Search songs, artists, albums",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = colors.textMuted,
-                            maxLines = 1,
-                        )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = SonaraSpacing.lg, vertical = SonaraSpacing.md),
+                    horizontalArrangement = Arrangement.spacedBy(SonaraSpacing.md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Search,
+                        contentDescription = null,
+                        tint = colors.textMuted,
+                        modifier = Modifier.size(SonaraSpacing.xl),
+                    )
+                    Box {
+                        if (query.isEmpty()) {
+                            Text(
+                                text = "Search songs, artists, albums",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = colors.textMuted,
+                                maxLines = 1,
+                            )
+                        }
+                        inner()
                     }
-                    inner()
                 }
             }
         },
-        modifier = Modifier.fillMaxWidth(),
     )
 }
 

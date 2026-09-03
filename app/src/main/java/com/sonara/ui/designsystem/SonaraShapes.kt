@@ -19,6 +19,10 @@ object SonaraShapes {
     val player = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     val pill = RoundedCornerShape(50)
 
+    /** Liquid-glass silhouettes — controlled capsule, not an exaggerated pill. */
+    val glassNavigation = RoundedCornerShape(34.dp)
+    val glassMiniPlayer = RoundedCornerShape(26.dp)
+
     /** Mapping into Material's shape slots so M3 components inherit the scale. */
     fun asMaterialShapes(): Shapes = Shapes(
         extraSmall = small,

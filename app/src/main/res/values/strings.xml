@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">Sonara</string>
+    <!-- OAuth web client ID for Google sign-in. Empty = sign-in reports an
+         honest "not configured" error instead of pretending to work. -->
+    <string name="google_web_client_id" translatable="false" />
 </resources>

@@ -1,6 +1,5 @@
 package com.sonara.ambient
 
-import androidx.compose.ui.graphics.Color
 import com.sonara.playback.NowPlayingState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
@@ -43,16 +42,3 @@ class AmbientEngine(
 
     fun setMode(mode: AmbientVisualMode) = engine.setMode(mode)
 }
-
-/** Glass tint roles derived from the ambient palette — one injection point. */
-data class AmbientGlassTint(
-    val surface: Color,
-    val border: Color,
-)
-
-fun AmbientPalette.glassTint(): AmbientGlassTint = AmbientGlassTint(
-    // Glass must stay visible on a near-black field, so the palette hue is
-    // blended toward light instead of using the dark field colors directly.
-    surface = colorFromHsl(colorToHsl(primary).first, 0.12f, 0.72f, alpha = 0x1F / 255f),
-    border = colorFromHsl(colorToHsl(highlight).first, 0.20f, 0.62f, alpha = 0x30 / 255f),
-)

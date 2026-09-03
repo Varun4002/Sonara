@@ -3,6 +3,8 @@ package com.sonara.ui.designsystem
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.spring
 
 /**
  * Motion tokens. Durations are in milliseconds; call sites pass them to
@@ -37,6 +39,15 @@ object SonaraMotion {
     /** Palette interpolation on song change; matches the ambient engine tick. */
     const val PaletteTransition: Int = 1_400
 
+    /** Selected-item lens gliding between navigation slots. */
+    const val GlassLensTransition: Int = 450
+
+    /** Mini-player material forming. */
+    const val MiniPlayerEnter: Int = 400
+
+    /** Mini-player retreating. */
+    const val MiniPlayerExit: Int = 350
+
     /** Confident deceleration — default for entrances and expansions. */
     val EmphasizedEasing: Easing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
 
@@ -45,4 +56,13 @@ object SonaraMotion {
 
     /** Gentle exit curve — faster out than in. */
     val ExitEasing: Easing = CubicBezierEasing(0.4f, 0.0f, 0.6f, 1.0f)
+
+    /**
+     * Heavy, fluid spring for the navigation lens — physical glide, no
+     * cartoonish bounce.
+     */
+    val LensSpring: SpringSpec<Float> = spring(
+        dampingRatio = 0.9f,
+        stiffness = 380f,
+    )
 }

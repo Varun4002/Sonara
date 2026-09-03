@@ -46,6 +46,7 @@ fun SonaraTrackRow(
     showMore: Boolean = false,
     onMore: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
+    model: Any? = null,
 ) {
     val colors = LocalSonaraColors.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -63,7 +64,7 @@ fun SonaraTrackRow(
     ) {
         SonaraArtwork(
             mediaId = mediaId,
-            model = null,
+            model = model,
             shape = artworkShape,
             modifier = Modifier.size(SonaraSpacing.huge),
         )

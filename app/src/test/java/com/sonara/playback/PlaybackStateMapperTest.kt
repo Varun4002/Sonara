@@ -35,26 +35,26 @@ class PlaybackStateMapperTest {
         assertThat(state.isEmpty).isFalse()
 
         // PLAYING.
-        state = PlaybackStateMapper.map(state, "aurora", isPlaying = true, positionMs = 500, durationMs = 14_000)
+        state = PlaybackStateMapper.map(state, "aurora", isPlaying = true, positionMs = 500, durationMs = 14_000, mediaItemCount = 5)
         assertThat(state.isPlaying).isTrue()
         assertThat(state.mediaId).isEqualTo("aurora")
 
         // PAUSED.
-        state = PlaybackStateMapper.map(state, "aurora", isPlaying = false, positionMs = 6_000, durationMs = 14_000)
+        state = PlaybackStateMapper.map(state, "aurora", isPlaying = false, positionMs = 6_000, durationMs = 14_000, mediaItemCount = 5)
         assertThat(state.mediaId).isEqualTo("aurora")
         assertThat(state.isEmpty).isFalse()
 
         // BUFFERING: isPlaying false, position callback fires, item still loaded.
-        state = PlaybackStateMapper.map(state, "aurora", isPlaying = false, positionMs = 6_500, durationMs = 14_000)
+        state = PlaybackStateMapper.map(state, "aurora", isPlaying = false, positionMs = 6_500, durationMs = 14_000, mediaItemCount = 5)
         assertThat(state.mediaId).isEqualTo("aurora")
         assertThat(state.isEmpty).isFalse()
 
         // PLAYING again.
-        state = PlaybackStateMapper.map(state, "aurora", isPlaying = true, positionMs = 7_000, durationMs = 14_000)
+        state = PlaybackStateMapper.map(state, "aurora", isPlaying = true, positionMs = 7_000, durationMs = 14_000, mediaItemCount = 5)
         assertThat(state.isPlaying).isTrue()
 
         // ENDED: last track, no next — stays visible, paused at end.
-        state = PlaybackStateMapper.map(state, "aurora", isPlaying = false, positionMs = 14_000, durationMs = 14_000)
+        state = PlaybackStateMapper.map(state, "aurora", isPlaying = false, positionMs = 14_000, durationMs = 14_000, mediaItemCount = 5)
         assertThat(state.isEmpty).isFalse()
         assertThat(state.mediaId).isEqualTo("aurora")
         assertThat(state.isPlaying).isFalse()

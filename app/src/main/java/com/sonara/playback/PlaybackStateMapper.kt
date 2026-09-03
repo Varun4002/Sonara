@@ -18,12 +18,26 @@ object PlaybackStateMapper {
         positionMs: Long,
         durationMs: Long,
         mediaItemCount: Int,
+        remoteTitle: String? = null,
+        remoteArtist: String? = null,
     ): NowPlayingState {
         val track = mediaId?.let(DemoCatalog::trackById)
         return when {
-            track == null && mediaItemCount == 0 ->
+            track == null && remoteTitle == null && mediaItemCount == 0 ->
                 // Genuinely nothing loaded — the only state that hides the player.
                 NowPlayingState.Empty.copy(isConnected = current.isConnected)
+
+            track == null && remoteTitle != null ->
+                // Provider-backed track: metadata supplied alongside the media id.
+                current.copy(
+                    isConnected = true,
+                    mediaId = mediaId,
+                    title = remoteTitle,
+                    artist = remoteArtist.orEmpty(),
+                    isPlaying = isPlaying,
+                    positionMs = positionMs.coerceAtLeast(0L),
+                    durationMs = durationMs.takeIf { it > 0 } ?: current.durationMs,
+                )
 
             track == null ->
                 // Transient null mid-transition: retain the last known track.

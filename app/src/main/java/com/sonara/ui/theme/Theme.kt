@@ -6,6 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.sonara.ambient.AmbientPalette
+import com.sonara.ambient.colorFromHsl
+import com.sonara.ambient.colorToHsl
 
 // Sonara is intentionally always-dark: it is an ambient environment, not a
 // day/night document surface. The reactive background supplies the color.
@@ -40,6 +43,27 @@ data class SonaraColors(
 )
 
 val LocalSonaraColors = staticCompositionLocalOf { SonaraColors() }
+
+/** Translucent glass roles derived from the active ambient palette. */
+@Immutable
+data class GlassTint(
+    val surface: Color,
+    val border: Color,
+)
+
+/**
+ * Maps the current song's palette onto the liquid-glass roles. The glass stays
+ * mostly neutral — a whisper of the environment's hue at low alpha, a slightly
+ * brighter rim — so navigation and mini-player inherit the room's lighting
+ * without becoming colored surfaces themselves.
+ */
+fun AmbientPalette.glassTint(): GlassTint {
+    val (hue, saturation, _) = colorToHsl(primary)
+    return GlassTint(
+        surface = colorFromHsl(hue, saturation * 0.45f, l = 0.62f, alpha = 0.10f),
+        border = colorFromHsl(hue, saturation * 0.50f, l = 0.78f, alpha = 0.24f),
+    )
+}
 
 /** Convenience accessor for the extended semantic roles. */
 @Composable

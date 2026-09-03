@@ -1,8 +1,10 @@
 package com.sonara.ui.screens.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Icon
@@ -23,11 +26,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import com.sonara.ambient.AmbientVisualMode
+import com.sonara.auth.AuthState
 import com.sonara.di.appContainer
 import com.sonara.ui.designsystem.SonaraSpacing
 import com.sonara.ui.theme.LocalSonaraColors
@@ -85,6 +91,12 @@ fun SettingsScreen(
         }
 
         item {
+            AccountSection(
+                onSignOut = { container.auth.signOut() },
+            )
+        }
+
+        item {
             SettingsSectionHeader("Appearance")
         }
         items(AmbientVisualMode.entries.size) { index ->
@@ -137,13 +149,103 @@ fun SettingsScreen(
     }
 }
 
+/**
+ * Current session identity. Shows avatar placeholder, display name,
+ * and connection status. Sign out requires a second tap to confirm.
+ */
 @Composable
-private fun SettingsSectionHeader(title: String) {
+private fun AccountSection(onSignOut: () -> Unit) {
+    val colors = LocalSonaraColors.current
+    val container = androidx.compose.ui.platform.LocalContext.current.appContainer
+    val authState by container.auth.state.collectAsState()
+    var confirming by remember { androidx.compose.runtime.mutableStateOf(false) }
+
+    SettingsSectionHeader("Account", topPadding = false)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (authState is AuthState.Authenticated || authState is AuthState.Anonymous) {
+                    Modifier.clickable {
+                        if (confirming) {
+                            confirming = false
+                            onSignOut()
+                        } else {
+                            confirming = true
+                        }
+                    }
+                } else Modifier,
+            )
+            .padding(vertical = SonaraSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(SonaraSpacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Avatar placeholder — circle with initial.
+        val initial = when (val state = authState) {
+            is AuthState.Authenticated -> state.account.displayName.firstOrNull()?.uppercase() ?: "?"
+            is AuthState.Anonymous -> "A"
+            else -> "?"
+        }
+        Box(
+            modifier = Modifier
+                .size(SonaraSpacing.huge)
+                .clip(CircleShape)
+                .background(colors.elevatedSurface),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = initial,
+                style = MaterialTheme.typography.titleMedium,
+                color = colors.textPrimary,
+            )
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            val (title, subtitle) = when (val state = authState) {
+                is AuthState.Authenticated ->
+                    state.account.displayName to "Connected"
+                is AuthState.Anonymous ->
+                    "Anonymous session" to "Everything stays on this device"
+                else ->
+                    "Signed out" to "Start from the welcome screen"
+            }
+            Text(
+                text = if (confirming) "Tap again to sign out" else title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = colors.textPrimary,
+            )
+            Text(
+                text = when {
+                    confirming -> "Playback continues; your local data is kept."
+                    else -> subtitle
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.textSecondary,
+            )
+        }
+    }
+
+    if (confirming) {
+        Text(
+            text = "You can always come back anonymously.",
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.textMuted,
+            modifier = Modifier.padding(bottom = SonaraSpacing.xs),
+        )
+    }
+}
+
+@Composable
+private fun SettingsSectionHeader(title: String, topPadding: Boolean = true) {
     Text(
         text = title,
         style = MaterialTheme.typography.labelLarge,
         color = LocalSonaraColors.current.textSecondary,
-        modifier = Modifier.padding(top = SonaraSpacing.sectionGap, bottom = SonaraSpacing.xs),
+        modifier = Modifier.padding(
+            top = if (topPadding) SonaraSpacing.sectionGap else SonaraSpacing.xs,
+            bottom = SonaraSpacing.xs,
+        ),
     )
 }
 
