@@ -22,3 +22,4 @@ local.properties
 # Keystores (keep debug only if ever added intentionally)
 *.jks
 *.keystore
+client_secret_*.json

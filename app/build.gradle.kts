@@ -31,6 +31,13 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             isMinifyEnabled = false
+            // OAuth web client ID for Google sign-in. Set in gradle.properties:
+            //   sonara.google.web.client.id=YOUR_CLIENT_ID.apps.googleusercontent.com
+            buildConfigField(
+                "String",
+                "GOOGLE_WEB_CLIENT_ID",
+                "\"${project.findProperty("sonara.google.web.client.id") ?: ""}\"",
+            )
         }
     }
 
@@ -80,6 +87,9 @@ dependencies {
 
     implementation(libs.androidx.palette.ktx)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
